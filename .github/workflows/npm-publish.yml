@@ -50,6 +50,7 @@ jobs:
           else
             echo "Release does not exist, creating release."
             echo "RELEASE_EXISTS=false" >> $GITHUB_ENV
+          fi
 
       # Debugging: Print RELEASE_EXISTS value
       - name: Debug RELEASE_EXISTS value
