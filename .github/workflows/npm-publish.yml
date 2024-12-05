@@ -9,97 +9,57 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      # Check out the repository
+      # Step 1: Check out the repository
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Set up Node.js
-      - name: Set up Node.js
+      # Step 2: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'  # Specify the Node.js version you need
+          node-version: '18'
 
       # Step 3: Install dependencies
       - name: Install dependencies
         run: npm install
 
-      # Step 4: Publish to npm with the latest tag
+      # Step 4: Publish to npm
       - name: Publish to npm
         run: |
           npm config set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
           npm publish --tag latest
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      
+
       # Step 5: Get version from the tag
       - name: Get version from tag
         id: get_version
         run: |
-          # Get the current version from the Git tag
           VERSION=${GITHUB_REF#refs/tags/}
           echo "VERSION=$VERSION" >> $GITHUB_ENV
-          PREVIOUS_TAG=$(git describe --tags --abbrev=0)
-          echo "PREVIOUS_TAG=$PREVIOUS_TAG" >> $GITHUB_ENV
 
-      # Step 6: Extract Release Notes from CHANGELOG.md
-      - name: Extract Release Notes from Changelog
-        id: changelog
-        run: |
-          VERSION=${{ env.VERSION }}
-          
-          # Extract the changelog entry for the version
-          CHANGELOG_ENTRY=$(awk "/## \[$VERSION\]/ {flag=1} flag && /^##/ {flag=0} flag" CHANGELOG.md)
-          
-          # If no entry is found, use a fallback message
-          if [ -z "$CHANGELOG_ENTRY" ]; then
-            CHANGELOG="No changes in this release."
-          else
-            CHANGELOG="$CHANGELOG_ENTRY"
-          fi
-          
-          echo "CHANGELOG=$CHANGELOG" >> $GITHUB_ENV
-
-      # Step 7: Debug the Changelog (Optional, for verification)
-      - name: Debug Changelog
-        run: |
-          echo "Changelog for version ${{ env.VERSION }}: ${{ env.CHANGELOG }}"
-
-      # Step 8: Check if release exists
-      - name: Check if release exists
+      # Step 6: Check if the release already exists
+      - name: Check if Release Exists
         id: check_release
         run: |
           TAG_EXISTS=$(gh release view ${{ env.VERSION }} --json tagName --jq '.tagName' || echo "not found")
           echo "Release check result: $TAG_EXISTS"
           if [ "$TAG_EXISTS" != "not found" ]; then
-            echo "Release exists, updating release."
+            echo "Release exists, skipping creation."
             echo "RELEASE_EXISTS=true" >> $GITHUB_ENV
           else
-            echo "Release does not exist."
+            echo "Release does not exist, creating release."
             echo "RELEASE_EXISTS=false" >> $GITHUB_ENV
-          fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Step 9: Create or Update GitHub Release
-      - name: Create or Update GitHub Release
-        if: ${{ env.RELEASE_EXISTS == 'false' }}
+      # Step 7: Create GitHub Release if not exists
+      - name: Create GitHub Release
+        if: steps.check_release.outputs.RELEASE_EXISTS == 'false'
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Step 10: Update Release Notes with Changelog (if release exists)
-      - name: Update Release Notes with Changelog
-        if: ${{ env.RELEASE_EXISTS == 'true' }}
-        run: |
-          VERSION="${{ env.VERSION }}"
-          CHANGELOG="${{ env.CHANGELOG }}"
-          gh release edit $VERSION --notes "## What's Changed\n\n${CHANGELOG}"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # Step 11: Create Release Notes with Changelog (for new releases)
+      # Step 8: Generate Release Notes and Create Release if necessary
       - name: Create Release Notes with Changelog
-        if: ${{ env.RELEASE_EXISTS == 'false' }}
+        if: steps.check_release.outputs.RELEASE_EXISTS == 'false'
         run: |
           VERSION="${{ env.VERSION }}"
           CHANGELOG="${{ env.CHANGELOG }}"
