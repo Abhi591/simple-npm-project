@@ -50,10 +50,16 @@ jobs:
           
           # Debugging: Print out the version we are searching for
           echo "Searching for version: $VERSION in CHANGELOG.md"
+          
+          # Debugging: Print contents of CHANGELOG.md (to confirm structure)
+          echo "Contents of CHANGELOG.md:"
+          cat CHANGELOG.md
 
           # Use awk to extract the changelog entry for the version
           CHANGELOG_ENTRY=$(awk -v version="[$VERSION]" '
             BEGIN {found=0}
+            # Debugging: Print each line to confirm matching
+            {print "Checking line:", $0}
             $0 ~ "## \\[" version "\\]" {found=1}  # Match version in square brackets
             found && $0 ~ "^##" {found=0}
             found {print}
@@ -65,7 +71,7 @@ jobs:
           else
             CHANGELOG="$CHANGELOG_ENTRY"
           fi
-
+          
           # Debugging: Print the extracted changelog content
           echo "CHANGELOG=$CHANGELOG" >> $GITHUB_ENV
           echo "Extracted Changelog for version $VERSION: $CHANGELOG"
