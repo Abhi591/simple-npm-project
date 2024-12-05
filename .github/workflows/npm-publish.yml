@@ -47,10 +47,10 @@ jobs:
           VERSION=${VERSION#v}
           
           # Use awk to extract all entries between version header and next version header
-          CHANGELOG_ENTRY=$(awk -v version="[$VERSION]" '
+          CHANGELOG_ENTRY=$(awk -v version="$VERSION" '
             BEGIN { found=0; buffer="" }
-            $0 ~ "^## " version { found=1; next }
-            found && $0 ~ "^## " { exit }
+            $0 ~ "^## [" version "]" { found=1; next }
+            found && $0 ~ "^## [" { exit }
             found && NF {
               if (buffer == "") buffer = $0
               else buffer = buffer "\n" $0
@@ -58,7 +58,7 @@ jobs:
             END { print buffer }
           ' CHANGELOG.md)
 
-          # If no entry is found, use a fallback message
+          # If no entry is found, use fallback message
           if [ -z "$CHANGELOG_ENTRY" ]; then
             CHANGELOG="No changes in this release."
           else
