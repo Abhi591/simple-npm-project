@@ -71,18 +71,6 @@ jobs:
           
           echo "CHANGELOG=$CHANGELOG" >> $GITHUB_ENV
 
-      # Add a debug step
-      - name: Debug Version and Changelog
-        run: |
-          echo "Version being searched: ${{ env.VERSION }}"
-          echo "Raw version after stripping: ${VERSION}"
-          echo "Final Changelog: ${{ env.CHANGELOG }}"
-
-      # Step 7: Debugging: Print the extracted changelog
-      - name: Debug Extracted Changelog
-        run: |
-          echo "Extracted Changelog for version ${{ env.VERSION }}: ${{ env.CHANGELOG }}"
-
       # Step 8: Create Release with the Changelog
       - name: Create Release
         id: create_release
