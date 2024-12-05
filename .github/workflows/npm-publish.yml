@@ -30,3 +30,47 @@ jobs:
           npm publish --tag latest
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      
+      # Step 5: Get previous tag and current tag
+      - name: Get version from tag
+        id: get_version
+        run: |
+          # Get the current version from the Git tag
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+          # Get the previous tag to determine changelog (if any)
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0)
+          echo "PREVIOUS_TAG=$PREVIOUS_TAG" >> $GITHUB_ENV
+
+      # Step 6: Generate release notes from commit messages
+      - name: Generate Release Notes
+        id: release_notes
+        run: |
+          # Get the commits between the previous and current tag
+          COMMITS=$(git log --oneline ${{ env.PREVIOUS_TAG }}..${{ env.VERSION }})
+          echo "COMMITS=$COMMITS" >> $GITHUB_ENV
+
+          # Optionally format the commit messages as a changelog
+          CHANGELOG=$(echo "$COMMITS" | sed 's/^/ - /')
+          echo "CHANGELOG=$CHANGELOG" >> $GITHUB_ENV
+
+      # Step 7: Create GitHub Release
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Step 8: Create Release Notes with Version and Changelog
+      - name: Create Release Notes with Changelog
+        run: |
+          VERSION=${{ env.VERSION }}
+          CHANGELOG=${{ env.CHANGELOG }}
+          # Use the GitHub CLI to create a release with the changelog
+          gh release create $VERSION --title "Version $VERSION" --notes "## What's Changed\n\n$CHANGELOG"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  
