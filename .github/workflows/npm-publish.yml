@@ -51,15 +51,17 @@ jobs:
             echo "Release does not exist, creating release."
             echo "RELEASE_EXISTS=false" >> $GITHUB_ENV
           fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # Debugging: Print RELEASE_EXISTS value
       - name: Debug RELEASE_EXISTS value
         run: |
           echo "Release exists: ${{ env.RELEASE_EXISTS }}"
 
-      # Step 7: Create GitHub Release if not exists
+      # Step 7: Create GitHub Release if it doesn't exist
       - name: Create GitHub Release
-        if: steps.check_release.outputs.RELEASE_EXISTS == 'false'
+        if: env.RELEASE_EXISTS == 'false'  # Create release only if it doesn't exist
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -68,13 +70,14 @@ jobs:
       - name: Check release creation status
         run: |
           echo "Release creation triggered for version ${{ env.VERSION }}"
-        
+
       # Step 8: Create Release Notes with Changelog if needed
       - name: Create Release Notes with Changelog
-        if: steps.check_release.outputs.RELEASE_EXISTS == 'false'
+        if: env.RELEASE_EXISTS == 'false'  # Create release notes only if the release was created
         run: |
           VERSION="${{ env.VERSION }}"
           CHANGELOG="${{ env.CHANGELOG }}"
+          echo "Creating GitHub release using 'gh release create'"
           gh release create $VERSION --title "Version $VERSION" --notes "## What's Changed\n\n${CHANGELOG}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
