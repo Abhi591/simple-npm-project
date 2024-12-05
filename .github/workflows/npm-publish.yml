@@ -56,7 +56,12 @@ jobs:
           
           echo "CHANGELOG=$CHANGELOG" >> $GITHUB_ENV
 
-      # Step 7: Create Release with the Changelog
+      # Step 7: Debugging: Print the extracted changelog
+      - name: Debug Extracted Changelog
+        run: |
+          echo "Extracted Changelog for version ${{ env.VERSION }}: ${{ env.CHANGELOG }}"
+
+      # Step 8: Create Release with the Changelog
       - name: Create Release
         id: create_release
         uses: comnoco/create-release-action@v2.0.5
@@ -67,7 +72,7 @@ jobs:
           release_name: Release ${{ github.ref }}  # Release name based on the tag
           body: |
             ## What's Changed:
-            ${CHANGELOG}  # Use the extracted changelog from the previous step
+            ${{ env.CHANGELOG }}  # Use the extracted changelog from the previous step
           draft: false
           prerelease: false
 
