@@ -66,13 +66,13 @@ jobs:
         run: |
           echo "Changelog for version ${{ env.VERSION }}: ${{ env.CHANGELOG }}"
 
-      # Step 8: Create GitHub Release
+      # Step 8: Create GitHub Release (without checking if it exists)
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Step 9: Create Release Notes with Version and Changelog
+      # Step 9: Create Release Notes with Version and Changelog (Optional, for extra customization)
       - name: Create Release Notes with Changelog
         run: |
           VERSION="${{ env.VERSION }}"
