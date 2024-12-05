@@ -43,25 +43,20 @@ jobs:
         id: changelog
         run: |
           VERSION=${{ env.VERSION }}
-
-          # Remove 'refs/tags/' prefix if it exists and also remove 'v' if present
-          VERSION=${VERSION#refs/tags/}  # Removes refs/tags/
-          VERSION=${VERSION#v}          # Removes 'v' if present (e.g., v2.23.0 -> 2.23.0)
+          VERSION=${VERSION#refs/tags/}
+          VERSION=${VERSION#v}
           
-          # Debugging: Print out the version we are searching for
-          echo "Searching for version: $VERSION in CHANGELOG.md"
-          
-          # Debugging: Print contents of CHANGELOG.md (to confirm structure)
-          echo "Contents of CHANGELOG.md:"
-          cat CHANGELOG.md
-
-          # Use awk to extract the changelog entry for the version
+          # Use awk to extract just the message content for the version
           CHANGELOG_ENTRY=$(awk -v version="[$VERSION]" '
-            BEGIN {found=0}
-            # Match version in square brackets directly without escape
-            $0 ~ "## " version {found=1}  # Match version in square brackets
-            found && $0 ~ "^##" {found=0}  # End extraction when next version header is found
-            found {print}
+            BEGIN {found=0; printing=0}
+            $0 ~ "^## " version {found=1; next}
+            found && $0 ~ "^### " {printing=1; next}
+            found && $0 ~ "^##" {exit}
+            found && printing && $0 ~ "^- " {
+              # Remove the leading "- " and print the message
+              print substr($0, 3)
+              exit
+            }
           ' CHANGELOG.md)
 
           # If no entry is found, use a fallback message
@@ -71,10 +66,6 @@ jobs:
             CHANGELOG="$CHANGELOG_ENTRY"
           fi
           
-          # Debugging: Print the extracted changelog content
-          echo "Extracted Changelog for version $VERSION: $CHANGELOG"
-
-          # Save the changelog to the environment
           echo "CHANGELOG=$CHANGELOG" >> $GITHUB_ENV
 
       # Step 7: Debugging: Print the extracted changelog
