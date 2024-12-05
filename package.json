@@ -1,6 +1,6 @@
 {
   "name": "npm-github-action-test-1",
-  "version": "2.7.0",
+  "version": "2.8.0",
   "description": "A simple npm project to test GitHub Actions.",
   "main": "index.js",
   "scripts": {
