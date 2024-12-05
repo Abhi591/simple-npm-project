@@ -14,7 +14,7 @@ jobs:
         uses: actions/checkout@v3
 
       # Step 2: Set up Node.js
-      - name: Set up Node.js
+        - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'  # Specify the Node.js version you need
@@ -56,7 +56,7 @@ jobs:
           if [ -z "$CHANGELOG_ENTRY" ]; then
             CHANGELOG="No changes in this release."
           else
-            CHANGELOG=$CHANGELOG_ENTRY
+            CHANGELOG="$CHANGELOG_ENTRY"
           fi
           
           echo "CHANGELOG=$CHANGELOG" >> $GITHUB_ENV
@@ -75,9 +75,10 @@ jobs:
       # Step 9: Create Release Notes with Version and Changelog
       - name: Create Release Notes with Changelog
         run: |
-          VERSION=${{ env.VERSION }}
-          CHANGELOG=${{ env.CHANGELOG }}
+          VERSION="${{ env.VERSION }}"
+          CHANGELOG="${{ env.CHANGELOG }}"
+          
           # Use the GitHub CLI to create a release with the changelog
-          gh release create $VERSION --title "Version $VERSION" --notes "## What's Changed\n\n$CHANGELOG"
+          gh release create $VERSION --title "Version $VERSION" --notes "## What's Changed\n\n${CHANGELOG}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
