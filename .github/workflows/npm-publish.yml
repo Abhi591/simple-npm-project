@@ -43,42 +43,33 @@ jobs:
         id: changelog
         run: |
           VERSION=${{ env.VERSION }}
-          # Remove 'v' prefix if it exists and any refs/tags
           VERSION=${VERSION#refs/tags/}
           VERSION=${VERSION#v}
-          
-          echo "Searching for version: $VERSION"  # Debug line
           
           # Use awk to extract all entries between version header and next version header
           CHANGELOG_ENTRY=$(awk -v version="$VERSION" '
             BEGIN { found=0; buffer="" }
-            $0 ~ "^## \\[" version "]" { 
-              found=1
-              print "Found version header: " $0 > "/dev/stderr"  # Debug line
-              next 
-            }
+            $0 ~ "^## \\[" version "]" { found=1; next }
             found && $0 ~ "^## \\[" { exit }
             found && NF {
+              # Remove leading whitespace and common prefixes
+              gsub(/^[[:space:]]*[-*]?[[:space:]]*/, "")
+              gsub(/^### (Added|Changed|Fixed|Removed|Deprecated)[[:space:]]*/, "")
               if (buffer == "") buffer = $0
-              else buffer = buffer "\n" $0
-              print "Adding line to buffer: " $0 > "/dev/stderr"  # Debug line
+              else buffer = buffer " " $0
             }
             END { print buffer }
           ' CHANGELOG.md)
-
-          echo "Extracted entry: $CHANGELOG_ENTRY"  # Debug line
 
           # If no entry is found, use fallback message
           if [ -z "$CHANGELOG_ENTRY" ]; then
             CHANGELOG="No changes in this release."
           else
-            # Escape newlines for GitHub Actions environment variable
-            CHANGELOG="${CHANGELOG_ENTRY//$'\n'/%0A}"
+            # Clean up the entry
+            CHANGELOG="$CHANGELOG_ENTRY"
           fi
           
-          echo "CHANGELOG<<EOF" >> $GITHUB_ENV
-          echo "$CHANGELOG" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          echo "CHANGELOG=$CHANGELOG" >> $GITHUB_ENV
 
       # Add a debug step
       - name: Debug Version and Changelog
