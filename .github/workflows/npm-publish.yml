@@ -43,21 +43,32 @@ jobs:
         id: changelog
         run: |
           VERSION=${{ env.VERSION }}
+
+          # Remove 'refs/tags/' prefix if it exists and also remove 'v' if present
+          VERSION=${VERSION#refs/tags/}  # Removes refs/tags/
+          VERSION=${VERSION#v}          # Removes 'v' if present (e.g., v2.23.0 -> 2.23.0)
           
-          # Remove the 'refs/tags/' prefix if it exists
-          VERSION=${VERSION#refs/tags/}
-          
-          # Extract the changelog entry for the version using awk
-          CHANGELOG_ENTRY=$(awk "/## \[$VERSION\]/ {flag=1} flag && /^##/ {flag=0} flag" CHANGELOG.md)
-          
+          # Debugging: Print out the version we are searching for
+          echo "Searching for version: $VERSION in CHANGELOG.md"
+
+          # Use awk to extract the changelog entry for the version
+          CHANGELOG_ENTRY=$(awk -v version="[$VERSION]" '
+            BEGIN {found=0}
+            $0 ~ "## " version {found=1}
+            found && $0 ~ "^##" {found=0}
+            found {print}
+          ' CHANGELOG.md)
+
           # If no entry is found, use a fallback message
           if [ -z "$CHANGELOG_ENTRY" ]; then
             CHANGELOG="No changes in this release."
           else
             CHANGELOG="$CHANGELOG_ENTRY"
           fi
-          
+
+          # Debugging: Print the extracted changelog content
           echo "CHANGELOG=$CHANGELOG" >> $GITHUB_ENV
+          echo "Extracted Changelog for version $VERSION: $CHANGELOG"
 
       # Step 7: Debugging: Print the extracted changelog
       - name: Debug Extracted Changelog
