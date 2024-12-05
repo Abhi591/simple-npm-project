@@ -9,12 +9,12 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      # Step 1: Check out the repository
+      # Check out the repository
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Step 2: Set up Node.js
-        - name: Set up Node.js
+      # Set up Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'  # Specify the Node.js version you need
