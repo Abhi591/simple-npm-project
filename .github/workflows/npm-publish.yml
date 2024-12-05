@@ -44,7 +44,10 @@ jobs:
         run: |
           VERSION=${{ env.VERSION }}
           
-          # Extract the changelog entry for the version
+          # Remove the 'refs/tags/' prefix if it exists
+          VERSION=${VERSION#refs/tags/}
+          
+          # Extract the changelog entry for the version using awk
           CHANGELOG_ENTRY=$(awk "/## \[$VERSION\]/ {flag=1} flag && /^##/ {flag=0} flag" CHANGELOG.md)
           
           # If no entry is found, use a fallback message
@@ -69,10 +72,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref }}  # Tag name is used as the version
-          release_name: Release ${{ github.ref }}  # Release name based on the tag
+          release_name: ${{ github.ref }}  # Release name based on the tag
           body: |
             ## What's Changed:
-            ${{ env.CHANGELOG }}  # Use the extracted changelog from the previous step
+            ${{ env.CHANGELOG }}
           draft: false
           prerelease: false
 
