@@ -9,21 +9,21 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      # Check out the repository
+      # Step 1: Check out the repository
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Set up Node.js
+      # Step 2: Set up Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'  # Specify the Node.js version you need
 
-      # Install dependencies
+      # Step 3: Install dependencies
       - name: Install dependencies
         run: npm install
 
-      # Publish to npm with the latest tag
+      # Step 4: Publish to npm with the latest tag
       - name: Publish to npm
         run: |
           npm config set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
@@ -31,7 +31,7 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       
-      # Step 5: Get previous tag and current tag
+      # Step 5: Get version from the tag
       - name: Get version from tag
         id: get_version
         run: |
@@ -43,25 +43,36 @@ jobs:
           PREVIOUS_TAG=$(git describe --tags --abbrev=0)
           echo "PREVIOUS_TAG=$PREVIOUS_TAG" >> $GITHUB_ENV
 
-      # Step 6: Generate release notes from commit messages
-      - name: Generate Release Notes
-        id: release_notes
+      # Step 6: Extract Release Notes from CHANGELOG.md
+      - name: Extract Release Notes from Changelog
+        id: changelog
         run: |
-          # Get the commits between the previous and current tag
-          COMMITS=$(git log --oneline ${{ env.PREVIOUS_TAG }}..${{ env.VERSION }})
-          echo "COMMITS=$COMMITS" >> $GITHUB_ENV
-
-          # Optionally format the commit messages as a changelog
-          CHANGELOG=$(echo "$COMMITS" | sed 's/^/ - /')
+          VERSION=${{ env.VERSION }}
+          
+          # Extract the changelog entry for the version
+          CHANGELOG_ENTRY=$(awk "/## \[$VERSION\]/ {flag=1} flag && /^##/ {flag=0} flag" CHANGELOG.md)
+          
+          # If no entry is found, use a fallback message
+          if [ -z "$CHANGELOG_ENTRY" ]; then
+            CHANGELOG="No changes in this release."
+          else
+            CHANGELOG=$CHANGELOG_ENTRY
+          fi
+          
           echo "CHANGELOG=$CHANGELOG" >> $GITHUB_ENV
 
-      # Step 7: Create GitHub Release
+      # Step 7: Debug the Changelog (Optional, for verification)
+      - name: Debug Changelog
+        run: |
+          echo "Changelog for version ${{ env.VERSION }}: ${{ env.CHANGELOG }}"
+
+      # Step 8: Create GitHub Release
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Step 8: Create Release Notes with Version and Changelog
+      # Step 9: Create Release Notes with Version and Changelog
       - name: Create Release Notes with Changelog
         run: |
           VERSION=${{ env.VERSION }}
@@ -70,4 +81,3 @@ jobs:
           gh release create $VERSION --title "Version $VERSION" --notes "## What's Changed\n\n$CHANGELOG"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  
