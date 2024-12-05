@@ -46,27 +46,29 @@ jobs:
           VERSION=${VERSION#refs/tags/}
           VERSION=${VERSION#v}
           
-          # Use awk to extract just the message content for the version
+          # Use awk to extract all entries between version header and next version header
           CHANGELOG_ENTRY=$(awk -v version="[$VERSION]" '
-            BEGIN {found=0; printing=0}
-            $0 ~ "^## " version {found=1; next}
-            found && $0 ~ "^### " {printing=1; next}
-            found && $0 ~ "^##" {exit}
-            found && printing && $0 ~ "^- " {
-              # Remove the leading "- " and print the message
-              print substr($0, 3)
-              exit
+            BEGIN { found=0; buffer="" }
+            $0 ~ "^## " version { found=1; next }
+            found && $0 ~ "^## " { exit }
+            found && NF {
+              if (buffer == "") buffer = $0
+              else buffer = buffer "\n" $0
             }
+            END { print buffer }
           ' CHANGELOG.md)
 
           # If no entry is found, use a fallback message
           if [ -z "$CHANGELOG_ENTRY" ]; then
             CHANGELOG="No changes in this release."
           else
-            CHANGELOG="$CHANGELOG_ENTRY"
+            # Escape newlines for GitHub Actions environment variable
+            CHANGELOG="${CHANGELOG_ENTRY//$'\n'/%0A}"
           fi
           
-          echo "CHANGELOG=$CHANGELOG" >> $GITHUB_ENV
+          echo "CHANGELOG<<EOF" >> $GITHUB_ENV
+          echo "$CHANGELOG" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
 
       # Step 7: Debugging: Print the extracted changelog
       - name: Debug Extracted Changelog
