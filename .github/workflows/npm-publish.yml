@@ -52,9 +52,9 @@ jobs:
           echo "Searching for version: $VERSION in CHANGELOG.md"
 
           # Use awk to extract the changelog entry for the version
-          CHANGELOG_ENTRY=$(awk -v version="\\[$VERSION\\]" '
+          CHANGELOG_ENTRY=$(awk -v version="[$VERSION]" '
             BEGIN {found=0}
-            $0 ~ "## " version {found=1}
+            $0 ~ "## \\[" version "\\]" {found=1}  # Match version in square brackets
             found && $0 ~ "^##" {found=0}
             found {print}
           ' CHANGELOG.md)
