@@ -50,6 +50,7 @@ jobs:
           else
             echo "Release does not exist, creating release."
             echo "RELEASE_EXISTS=false" >> $GITHUB_ENV
+          fi
 
       # Step 7: Create GitHub Release if not exists
       - name: Create GitHub Release
